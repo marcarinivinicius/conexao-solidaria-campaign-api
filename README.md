@@ -82,6 +82,21 @@ Use o token retornado no header `Authorization: Bearer <token>`.
 | `GET` | `/health` | Público |
 | `GET` | `/metrics` | Público (formato Prometheus, coletado pelo Zabbix agent2 do `conexao-solidaria-infra`) |
 
+## Deploy (GitOps)
+
+Não existe mais `kubectl apply -k k8s/` neste repo. O deploy em Kubernetes
+é feito pelo [`conexao-solidaria-infra`](https://github.com/marcarinivinicius/conexao-solidaria-infra),
+que também guarda os manifests (`Rollout` com canary, `Ingress`,
+`Service`). O CI daqui só builda, publica a imagem em
+`ghcr.io/marcarinivinicius/conexao-solidaria-campaign-api` e **abre um PR**
+naquele repo bumpando a tag — quem promove pro cluster é o ArgoCD +
+Argo Rollouts depois do merge.
+
+Requer o secret `INFRA_REPO_TOKEN` (Personal Access Token com escrita em
+`conexao-solidaria-infra`) configurado neste repo em *Settings → Secrets
+and variables → Actions*. Sem ele, o job `deploy` do CI falha com erro
+claro na etapa de clone/push — não afeta build nem testes.
+
 ## Testes
 
 ```bash
