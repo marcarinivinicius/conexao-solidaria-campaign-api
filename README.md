@@ -87,10 +87,24 @@ Use o token retornado no header `Authorization: Bearer <token>`.
 Não existe mais `kubectl apply -k k8s/` neste repo. O deploy em Kubernetes
 é feito pelo [`conexao-solidaria-infra`](https://github.com/marcarinivinicius/conexao-solidaria-infra),
 que também guarda os manifests (`Rollout` com canary, `Ingress`,
-`Service`). O CI daqui só builda, publica a imagem em
-`ghcr.io/marcarinivinicius/conexao-solidaria-campaign-api` e **abre um PR**
-naquele repo bumpando a tag — quem promove pro cluster é o ArgoCD +
-Argo Rollouts depois do merge.
+`Service`).
+
+O CI tem duas partes com gatilhos diferentes:
+
+| Gatilho | O que roda |
+|---|---|
+| Push em `main` ou Pull Request | Só `build-test` (build + `dotnet test`) — **nenhuma imagem é criada** |
+| Push de uma tag `v*` (ex.: `v1.2.0`) | `build-test` + build/push da imagem em `ghcr.io/marcarinivinicius/conexao-solidaria-campaign-api:<tag>` + abre PR em `conexao-solidaria-infra` bumpando pra essa tag |
+
+Ou seja: imagem só existe quando alguém decide cortar uma versão
+(`git tag v1.2.0 && git push origin v1.2.0`) — commits normais na `main`
+não geram deploy nenhum. Quem promove a nova imagem pro cluster depois do
+PR mergeado é o ArgoCD + Argo Rollouts.
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 Requer o secret `INFRA_REPO_TOKEN` (Personal Access Token com escrita em
 `conexao-solidaria-infra`) configurado neste repo em *Settings → Secrets

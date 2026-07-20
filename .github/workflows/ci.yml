@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
     branches: [main]
 
@@ -11,6 +12,7 @@ env:
   APP_NAME: campaign-api
 
 jobs:
+  # Build + testes rodam sempre (push em main, PR, ou push de tag).
   build-test:
     runs-on: ubuntu-latest
     permissions:
@@ -39,38 +41,35 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --logger "console;verbosity=normal"
 
-  docker-build:
+  # So builda e publica imagem quando o push e de uma tag de versao
+  # (ex.: v1.2.3) - nenhuma imagem e criada em push comum na main ou em PR.
+  publish-image:
     runs-on: ubuntu-latest
     needs: build-test
+    if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       packages: write
     outputs:
-      image_tag: ${{ steps.meta.outputs.tag }}
+      image_tag: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
-
-      - id: meta
-        run: echo "tag=$(echo ${{ github.sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3
 
       - name: Login no GHCR
-        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build (e push, se for a main) imagem Docker
+      - name: Build e push da imagem Docker
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: ${{ github.event_name == 'push' }}
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
-            ${{ env.IMAGE }}:latest
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
           secrets: |
             nuget_token=${{ secrets.GITHUB_TOKEN }}
 
@@ -79,8 +78,7 @@ jobs:
   # sincroniza depois que esse PR for mergeado - ver conexao-solidaria-infra/README.md.
   deploy:
     runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish-image
     steps:
       - name: Clone repo infra
         run: |
@@ -97,7 +95,7 @@ jobs:
       - name: Atualizar tag da imagem
         run: |
           cd infra-repo/cluster/apps/services/${{ env.APP_NAME }}
-          kustomize edit set image "${{ env.IMAGE }}=${{ env.IMAGE }}:${{ needs.docker-build.outputs.image_tag }}"
+          kustomize edit set image "${{ env.IMAGE }}=${{ env.IMAGE }}:${{ needs.publish-image.outputs.image_tag }}"
           cat kustomization.yaml
 
       - name: Criar branch e abrir PR
@@ -105,20 +103,20 @@ jobs:
           GH_TOKEN: ${{ secrets.INFRA_REPO_TOKEN }}
         run: |
           cd infra-repo
-          DEPLOY_BRANCH="deploy/${{ env.APP_NAME }}-${{ needs.docker-build.outputs.image_tag }}"
+          DEPLOY_BRANCH="deploy/${{ env.APP_NAME }}-${{ needs.publish-image.outputs.image_tag }}"
           git checkout -b "$DEPLOY_BRANCH"
           git add "cluster/apps/services/${{ env.APP_NAME }}/"
 
-          COMMIT_MSG="deploy(${{ env.APP_NAME }}): ${{ needs.docker-build.outputs.image_tag }}"
+          COMMIT_MSG="deploy(${{ env.APP_NAME }}): ${{ needs.publish-image.outputs.image_tag }}"
           git commit -m "$COMMIT_MSG"
           git push origin "$DEPLOY_BRANCH"
 
           gh pr create \
             --repo marcarinivinicius/conexao-solidaria-infra \
             --title "$COMMIT_MSG" \
-            --body "Imagem: \`${{ env.IMAGE }}:${{ needs.docker-build.outputs.image_tag }}\`
-Origem: ${{ github.repository }}@${{ github.sha }}
+            --body "Imagem: \`${{ env.IMAGE }}:${{ needs.publish-image.outputs.image_tag }}\`
+            Origem: ${{ github.repository }}@${{ github.sha }}
 
-Após o merge, o ArgoCD sincroniza e o Argo Rollouts promove em canary." \
+            Após o merge, o ArgoCD sincroniza e o Argo Rollouts promove em canary." \
             --base main \
             --head "$DEPLOY_BRANCH"
