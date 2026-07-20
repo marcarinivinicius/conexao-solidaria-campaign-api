@@ -1,0 +1,24 @@
+name: conexao-solidaria-campaign-api
+
+networks:
+  conexao-solidaria-net:
+    external: true # criada pelo docker-compose do conexao-solidaria-infra
+
+services:
+  campaign-api:
+    build:
+      context: .
+      secrets:
+        - nuget_token
+    ports:
+      - "8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=conexaosolidaria;Username=conexaosolidaria;Password=conexaosolidaria"
+      RABBITMQ_USERNAME: conexaosolidaria
+      RABBITMQ_PASSWORD: conexaosolidaria
+    networks: [conexao-solidaria-net]
+
+secrets:
+  nuget_token:
+    environment: GITHUB_PACKAGES_TOKEN

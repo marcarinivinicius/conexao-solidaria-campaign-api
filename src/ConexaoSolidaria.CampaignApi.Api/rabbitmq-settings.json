@@ -1,0 +1,12 @@
+{
+  "BrokerHost": "rabbitmq",
+  "HostPort": 5672,
+  "VirtualHostPath": "/",
+  "UsernameEnvVar": "RABBITMQ_USERNAME",
+  "PasswordEnvVar": "RABBITMQ_PASSWORD",
+  "ClientName": "conexao-solidaria-campaign-api",
+  "PublisherChannel": {
+    "DeclareExchangeType": "direct",
+    "DeclareExchangeDurable": true
+  }
+}
