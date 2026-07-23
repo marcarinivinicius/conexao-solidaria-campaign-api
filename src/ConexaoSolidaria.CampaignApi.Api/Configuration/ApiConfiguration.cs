@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Prometheus;
+using Scalar.AspNetCore;
 
 namespace ConexaoSolidaria.CampaignApi.Api.Configuration;
 
@@ -74,6 +75,10 @@ public static class ApiConfiguration
 
         app.UseSwagger();
         app.UseSwaggerUI();
+
+        app.MapScalarApiReference(options => options
+            .WithTitle("Conexao Solidaria - Campaign API")
+            .WithOpenApiRoutePattern("/swagger/{documentName}/swagger.json"));
 
         app.UseHttpMetrics();
 

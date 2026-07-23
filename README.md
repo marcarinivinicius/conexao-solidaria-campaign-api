@@ -49,7 +49,9 @@ dotnet run --project src/ConexaoSolidaria.CampaignApi.Api
 ```
 
 A API aplica as migrations do EF Core automaticamente no startup. Swagger
-em `http://localhost:5000/swagger` (ou a porta que o Kestrel imprimir).
+em `http://localhost:5000/swagger`, e uma UI alternativa (Scalar, lê o
+mesmo `swagger.json`) em `http://localhost:5000/scalar/v1` (ou a porta
+que o Kestrel imprimir).
 
 ### Opção 2 — Docker Compose
 
@@ -58,7 +60,8 @@ docker compose build --secret id=nuget_token,env=GITHUB_PACKAGES_TOKEN
 docker compose up -d
 ```
 
-API em `http://localhost:8081`.
+API em `http://localhost:8081` — Swagger em `/swagger`, Scalar em
+`/scalar/v1`.
 
 ## Autenticação
 
