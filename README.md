@@ -68,13 +68,23 @@ API em `http://localhost:8081` — Swagger em `/swagger`, Scalar em
 Login **único** pra qualquer role — `POST /api/v1/auth/login` com
 `{ "email": "...", "senha": "..." }`. O backend resolve sozinho quem é
 quem (tenta `SuperAdmin` → `Gestor` → `Doador`, nessa ordem) e devolve
-`{ "token": "...", "role": "..." }`.
+`{ "token": "...", "refreshToken": "...", "role": "..." }`.
+
+`token` é um JWT de vida curta (`Jwt:ExpirationMinutes`, default **15
+min**). `refreshToken` é um segredo opaco (não é JWT) de vida longa
+(`RefreshToken:ExpirationDays`, default **7 dias**) — troque por um par
+novo em `POST /api/v1/auth/refresh` com `{ "refreshToken": "..." }`. Cada
+uso **rotaciona**: o refresh token usado é invalidado e um novo é
+devolvido junto com o access token novo. Se um refresh token já usado for
+apresentado de novo (replay/roubo), a API revoga **toda** a sessão daquele
+usuário e devolve `401`. `POST /api/v1/auth/logout` com o mesmo corpo
+revoga o refresh token (idempotente, sempre `204`).
 
 Cadastro: `/api/v1/auth/register` é o registro padrão, público, de
-doador — já devolve `{ "id": "...", "token": "...", "role": "Doador" }`,
-sem precisar chamar `/auth/login` em seguida. Gestor tem rota própria
-porque exige autenticação de `SuperAdmin` (por isso não devolve token de
-outra pessoa pra quem chamou):
+doador — já devolve `{ "id": "...", "token": "...", "refreshToken": "...",
+"role": "Doador" }`, sem precisar chamar `/auth/login` em seguida. Gestor
+tem rota própria porque exige autenticação de `SuperAdmin` (por isso não
+devolve token de outra pessoa pra quem chamou):
 
 | Role | Como existe | Cadastro | Login |
 |---|---|---|---|
@@ -83,18 +93,22 @@ outra pessoa pra quem chamou):
 | `Doador` | Auto-cadastro público | `POST /api/v1/auth/register` (anônimo) | `POST /api/v1/auth/login` |
 
 Use o token retornado no header `Authorization: Bearer <token>`.
+`login`, `register` e `refresh` têm rate limit de 5 requisições/minuto por
+IP (`429` acima disso).
 
 ## Endpoints principais
 
 | Método | Rota | Acesso |
 |---|---|---|
 | `POST` | `/api/v1/auth/login` | Público — login único (SuperAdmin/GestorONG/Doador) |
+| `POST` | `/api/v1/auth/refresh` | Público — troca refresh token por par novo (rotação) |
+| `POST` | `/api/v1/auth/logout` | Público — revoga o refresh token |
 | `POST` | `/api/v1/auth/register` | Público — auto-cadastro de doador |
 | `POST` | `/api/v1/auth/register/gestor` | `SuperAdmin` — cadastro de gestor da ONG |
 | `GET` | `/api/v1/campanhas` | Público — painel de transparência (só campanhas `Ativa`) |
 | `POST` | `/api/v1/campanhas` | `GestorONG` |
 | `PUT` | `/api/v1/campanhas/{id}` | `GestorONG` |
-| `POST` | `/api/v1/doacoes` | `Doador` — publica `DoacaoRecebidaEvent`, não atualiza o total direto |
+| `POST` | `/api/v1/doacoes` | `Doador` — publica `DoacaoRecebidaEvent`, não atualiza o total direto. Header opcional `Idempotency-Key: <guid>` evita duplicar a doação em retry |
 | `GET` | `/health` | Público |
 | `GET` | `/metrics` | Público (formato Prometheus) |
 

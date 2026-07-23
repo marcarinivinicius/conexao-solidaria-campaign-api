@@ -8,7 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ConexaoSolidaria.CampaignApi.Infrastructure.Data.Security;
 
-public class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenGenerator
+public class JwtTokenGenerator(IOptions<JwtOptions> options, TimeProvider timeProvider) : IJwtTokenGenerator
 {
     private readonly JwtOptions _options = options.Value;
 
@@ -29,7 +29,7 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenGenerato
             issuer: _options.Issuer,
             audience: _options.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.ExpirationMinutes),
+            expires: timeProvider.GetUtcNow().UtcDateTime.AddMinutes(_options.ExpirationMinutes),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

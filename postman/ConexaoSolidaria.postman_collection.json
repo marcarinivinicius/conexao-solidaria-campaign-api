@@ -10,10 +10,12 @@
     { "key": "superAdminToken", "value": "" },
     { "key": "gestorToken", "value": "" },
     { "key": "doadorToken", "value": "" },
+    { "key": "doadorRefreshToken", "value": "" },
     { "key": "campanhaId", "value": "" },
     { "key": "gestorEmail", "value": "" },
     { "key": "doadorEmail", "value": "" },
-    { "key": "doadorCpf", "value": "" }
+    { "key": "doadorCpf", "value": "" },
+    { "key": "idempotencyKey", "value": "" }
   ],
   "event": [
     {
@@ -42,6 +44,10 @@
           "",
           "if (!pm.collectionVariables.get('doadorCpf')) {",
           "  pm.collectionVariables.set('doadorCpf', cpfValido());",
+          "}",
+          "",
+          "if (!pm.collectionVariables.get('idempotencyKey')) {",
+          "  pm.collectionVariables.set('idempotencyKey', crypto.randomUUID());",
           "}"
         ]
       }
@@ -158,6 +164,7 @@
                   "const json = pm.response.json();",
                   "pm.test('Role e Doador', () => pm.expect(json.role).to.eql('Doador'));",
                   "pm.collectionVariables.set('doadorToken', json.token);",
+                  "pm.collectionVariables.set('doadorRefreshToken', json.refreshToken);",
                   "pm.collectionVariables.set('doadorEmail', 'doador.postman.' + pm.collectionVariables.get('runId') + '@exemplo.com');"
                 ]
               }
@@ -185,8 +192,58 @@
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
                   "pm.test('Role e Doador', () => pm.expect(json.role).to.eql('Doador'));",
-                  "pm.collectionVariables.set('doadorToken', json.token);"
+                  "pm.collectionVariables.set('doadorToken', json.token);",
+                  "pm.collectionVariables.set('doadorRefreshToken', json.refreshToken);"
                 ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token (Doador)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{doadorRefreshToken}}\"\n}"
+            },
+            "description": "Rotaciona: {{doadorRefreshToken}} atual e invalidado, um par novo e devolvido e salvo aqui. Rodar essa request de novo com o token velho (antes de atualizar a variavel) daria 401 (reuso detectado)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('doadorToken', json.accessToken);",
+                  "pm.collectionVariables.set('doadorRefreshToken', json.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout (Doador)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/logout",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{doadorRefreshToken}}\"\n}"
+            },
+            "description": "Revoga o refresh token atual (204, idempotente - chamar de novo tambem da 204). Nao roda por padrao no fluxo pra nao invalidar o token usado pelas pastas seguintes."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
               }
             }
           ]
@@ -273,14 +330,43 @@
           "name": "Registrar Doacao (Doador)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doadorToken}}" }] },
             "url": "{{baseUrl}}/api/v1/doacoes",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"idCampanha\": \"{{campanhaId}}\",\n  \"valorDoacao\": 150.50\n}"
             },
-            "description": "Precisa do {{doadorToken}} e {{campanhaId}} (pastas anteriores). Publica DoacaoRecebidaEvent no RabbitMQ - o valor so aparece em 'Listar Campanhas Ativas' depois do donation-worker consumir a fila (poucos segundos)."
+            "description": "Precisa do {{doadorToken}} e {{campanhaId}} (pastas anteriores). Publica DoacaoRecebidaEvent no RabbitMQ - o valor so aparece em 'Listar Campanhas Ativas' depois do donation-worker consumir a fila (poucos segundos). Idempotency-Key opcional: se repetir essa request com a mesma chave (proxima abaixo), o evento nao e republicado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar Doacao de novo (retry idempotente - nao deve duplicar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+            ],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doadorToken}}" }] },
+            "url": "{{baseUrl}}/api/v1/doacoes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCampanha\": \"{{campanhaId}}\",\n  \"valorDoacao\": 150.50\n}"
+            },
+            "description": "Mesma Idempotency-Key da request anterior - simula um retry de cliente (timeout, double-click). Devolve o mesmo doacaoId e NAO publica evento de novo, entao o valor arrecadado nao duplica."
           },
           "event": [
             {

@@ -1,6 +1,7 @@
 using ConexaoSolidaria.CampaignApi.Application.Abstractions;
 using ConexaoSolidaria.CampaignApi.Domain.Entities;
 using ConexaoSolidaria.CampaignApi.Domain.Exceptions;
+using FluentValidation;
 using MediatR;
 
 namespace ConexaoSolidaria.CampaignApi.Application.UseCases.Gestores.CadastrarGestor;
@@ -8,6 +9,16 @@ namespace ConexaoSolidaria.CampaignApi.Application.UseCases.Gestores.CadastrarGe
 // So chamado por quem ja autenticou como SuperAdmin - o [Authorize] fica
 // no controller, aqui so a regra de negocio (email unico).
 public record CadastrarGestorCommand(string NomeCompleto, string Email, string Senha) : IRequest<CadastrarGestorResult>;
+
+public class CadastrarGestorCommandValidator : AbstractValidator<CadastrarGestorCommand>
+{
+    public CadastrarGestorCommandValidator()
+    {
+        RuleFor(x => x.NomeCompleto).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().MaximumLength(200);
+        RuleFor(x => x.Senha).NotEmpty().MinimumLength(8);
+    }
+}
 
 public record CadastrarGestorResult(Guid Id);
 

@@ -13,6 +13,7 @@ public static class InfrastructureDataServiceCollectionExtensions
     public static IServiceCollection AddInfrastructureData(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<RefreshTokenOptions>(configuration.GetSection(RefreshTokenOptions.SectionName));
         services.Configure<SuperAdminCredentialsOptions>(configuration.GetSection(SuperAdminCredentialsOptions.SectionName));
 
         services.AddRabbitMqClient<CampaignApiRabbitMqConfiguration>();
@@ -20,6 +21,8 @@ public static class InfrastructureDataServiceCollectionExtensions
 
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<IRefreshTokenGenerator, RefreshTokenGenerator>();
+        services.AddScoped<ITokenIssuer, TokenIssuer>();
         services.AddSingleton<ISuperAdminAuthenticator, SuperAdminAuthenticator>();
 
         return services;

@@ -1,6 +1,7 @@
 using ConexaoSolidaria.CampaignApi.Application.Abstractions;
 using ConexaoSolidaria.CampaignApi.Domain.Enums;
 using ConexaoSolidaria.CampaignApi.Domain.Exceptions;
+using FluentValidation;
 using MediatR;
 
 namespace ConexaoSolidaria.CampaignApi.Application.UseCases.Campanhas.EditarCampanha;
@@ -13,6 +14,19 @@ public record EditarCampanhaCommand(
     DateTime DataFim,
     decimal MetaFinanceira,
     StatusCampanha Status) : IRequest;
+
+public class EditarCampanhaCommandValidator : AbstractValidator<EditarCampanhaCommand>
+{
+    public EditarCampanhaCommandValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.Titulo).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Descricao).NotEmpty();
+        RuleFor(x => x.DataFim).GreaterThan(x => x.DataInicio);
+        RuleFor(x => x.MetaFinanceira).GreaterThan(0);
+        RuleFor(x => x.Status).IsInEnum();
+    }
+}
 
 public class EditarCampanhaHandler(
     ICampanhaRepository repository,

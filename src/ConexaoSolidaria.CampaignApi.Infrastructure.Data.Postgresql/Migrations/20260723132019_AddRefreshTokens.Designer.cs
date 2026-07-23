@@ -3,6 +3,7 @@ using System;
 using ConexaoSolidaria.CampaignApi.Infrastructure.Data.Postgresql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ConexaoSolidaria.CampaignApi.Infrastructure.Data.Postgresql.Migrations
 {
     [DbContext(typeof(CampaignApiDbContext))]
-    partial class CampaignApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260723132019_AddRefreshTokens")]
+    partial class AddRefreshTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,28 +66,6 @@ namespace ConexaoSolidaria.CampaignApi.Infrastructure.Data.Postgresql.Migrations
                     b.HasIndex("Status");
 
                     b.ToTable("campanhas", (string)null);
-                });
-
-            modelBuilder.Entity("ConexaoSolidaria.CampaignApi.Domain.Entities.DoacaoProcessada", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CampanhaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CriadoEm")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DoadorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Valor")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("doacoes_processadas", (string)null);
                 });
 
             modelBuilder.Entity("ConexaoSolidaria.CampaignApi.Domain.Entities.Doador", b =>

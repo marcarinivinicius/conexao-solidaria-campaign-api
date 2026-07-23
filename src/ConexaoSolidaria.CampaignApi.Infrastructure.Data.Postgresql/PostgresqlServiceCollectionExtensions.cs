@@ -18,6 +18,8 @@ public static class PostgresqlServiceCollectionExtensions
         services.AddScoped<ICampanhaRepository, CampanhaRepository>();
         services.AddScoped<IDoadorRepository, DoadorRepository>();
         services.AddScoped<IGestorRepository, GestorRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IDoacaoProcessadaRepository, DoacaoProcessadaRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;

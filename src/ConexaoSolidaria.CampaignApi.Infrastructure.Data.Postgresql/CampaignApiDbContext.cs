@@ -8,6 +8,8 @@ public class CampaignApiDbContext(DbContextOptions<CampaignApiDbContext> options
     public DbSet<Campanha> Campanhas => Set<Campanha>();
     public DbSet<Doador> Doadores => Set<Doador>();
     public DbSet<Gestor> Gestores => Set<Gestor>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<DoacaoProcessada> DoacoesProcessadas => Set<DoacaoProcessada>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
