@@ -71,8 +71,10 @@ quem (tenta `SuperAdmin` → `Gestor` → `Doador`, nessa ordem) e devolve
 `{ "token": "...", "role": "..." }`.
 
 Cadastro: `/api/v1/auth/register` é o registro padrão, público, de
-doador. Gestor tem rota própria porque exige autenticação de
-`SuperAdmin`:
+doador — já devolve `{ "id": "...", "token": "...", "role": "Doador" }`,
+sem precisar chamar `/auth/login` em seguida. Gestor tem rota própria
+porque exige autenticação de `SuperAdmin` (por isso não devolve token de
+outra pessoa pra quem chamou):
 
 | Role | Como existe | Cadastro | Login |
 |---|---|---|---|

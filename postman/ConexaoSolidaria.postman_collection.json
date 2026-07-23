@@ -146,7 +146,7 @@
               "mode": "raw",
               "raw": "{\n  \"nomeCompleto\": \"Maria Postman\",\n  \"email\": \"doador.postman.{{runId}}@exemplo.com\",\n  \"cpf\": \"{{doadorCpf}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"
             },
-            "description": "Publico. Email e CPF gerados na collection (variable de pre-request), unicos por execucao. Salva o email em {{doadorEmail}}."
+            "description": "Publico. Email e CPF gerados na collection (variable de pre-request), unicos por execucao. Ja devolve token (nao precisa de /auth/login em seguida) - salva em {{doadorToken}}, e o email em {{doadorEmail}}."
           },
           "event": [
             {
@@ -155,6 +155,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Role e Doador', () => pm.expect(json.role).to.eql('Doador'));",
+                  "pm.collectionVariables.set('doadorToken', json.token);",
                   "pm.collectionVariables.set('doadorEmail', 'doador.postman.' + pm.collectionVariables.get('runId') + '@exemplo.com');"
                 ]
               }
@@ -162,7 +165,7 @@
           ]
         },
         {
-          "name": "Login Doador",
+          "name": "Login Doador (opcional - so pra demonstrar o login unico)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -171,7 +174,7 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{doadorEmail}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"
             },
-            "description": "Salva o token em {{doadorToken}}."
+            "description": "Nao e necessario pro fluxo (o cadastro ja devolveu token) - so demonstra que o mesmo doador tambem consegue logar por /auth/login."
           },
           "event": [
             {

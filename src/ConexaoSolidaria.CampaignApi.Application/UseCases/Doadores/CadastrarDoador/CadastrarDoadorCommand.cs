@@ -11,12 +11,13 @@ public record CadastrarDoadorCommand(
     string Cpf,
     string Senha) : IRequest<CadastrarDoadorResult>;
 
-public record CadastrarDoadorResult(Guid Id);
+public record CadastrarDoadorResult(Guid Id, string Token, string Role);
 
 public class CadastrarDoadorHandler(
     IDoadorRepository repository,
     IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork,
+    IJwtTokenGenerator jwtTokenGenerator,
     TimeProvider timeProvider) : IRequestHandler<CadastrarDoadorCommand, CadastrarDoadorResult>
 {
     public async Task<CadastrarDoadorResult> Handle(CadastrarDoadorCommand request, CancellationToken cancellationToken)
@@ -34,6 +35,8 @@ public class CadastrarDoadorHandler(
         await repository.AdicionarAsync(doador, cancellationToken);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken);
 
-        return new CadastrarDoadorResult(doador.Id);
+        var token = jwtTokenGenerator.GerarToken(doador.Id, doador.Email, Roles.Doador);
+
+        return new CadastrarDoadorResult(doador.Id, token, Roles.Doador);
     }
 }
