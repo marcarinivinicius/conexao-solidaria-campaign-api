@@ -84,7 +84,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{superAdminToken}}" }] },
-            "url": "{{baseUrl}}/api/v1/gestores",
+            "url": "{{baseUrl}}/api/v1/auth/register/gestor",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nomeCompleto\": \"Gestor Postman\",\n  \"email\": \"gestor.postman.{{runId}}@exemplo.com\",\n  \"senha\": \"SenhaGestor123!\"\n}"
@@ -141,7 +141,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/v1/doadores",
+            "url": "{{baseUrl}}/api/v1/auth/register/doador",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nomeCompleto\": \"Maria Postman\",\n  \"email\": \"doador.postman.{{runId}}@exemplo.com\",\n  \"cpf\": \"{{doadorCpf}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"

@@ -67,11 +67,14 @@ Login **único** pra qualquer role — `POST /api/v1/auth/login` com
 quem (tenta `SuperAdmin` → `Gestor` → `Doador`, nessa ordem) e devolve
 `{ "token": "...", "role": "..." }`.
 
-| Role | Como existe | Login |
-|---|---|---|
-| `SuperAdmin` | Credencial única seedada em `appsettings.json` (seção `SuperAdmin`) — default de dev: `superadmin@conexaosolidaria.org.br` / `TrocarSenha123!` | `POST /api/v1/auth/login` |
-| `GestorONG` | Cadastrado por quem já é `SuperAdmin`, via `POST /api/v1/gestores` | `POST /api/v1/auth/login` |
-| `Doador` | Auto-cadastro público via `POST /api/v1/doadores` | `POST /api/v1/auth/login` |
+Cadastro tem duas rotas, ambas sob `/api/v1/auth/register/*`, cada uma com
+a autorização que faz sentido pro papel:
+
+| Role | Como existe | Cadastro | Login |
+|---|---|---|---|
+| `SuperAdmin` | Credencial única seedada em `appsettings.json` (seção `SuperAdmin`) — default de dev: `superadmin@conexaosolidaria.org.br` / `TrocarSenha123!` | — | `POST /api/v1/auth/login` |
+| `GestorONG` | Cadastrado por quem já é `SuperAdmin` | `POST /api/v1/auth/register/gestor` (autenticado como `SuperAdmin`) | `POST /api/v1/auth/login` |
+| `Doador` | Auto-cadastro público | `POST /api/v1/auth/register/doador` (anônimo) | `POST /api/v1/auth/login` |
 
 Use o token retornado no header `Authorization: Bearer <token>`.
 
@@ -80,11 +83,11 @@ Use o token retornado no header `Authorization: Bearer <token>`.
 | Método | Rota | Acesso |
 |---|---|---|
 | `POST` | `/api/v1/auth/login` | Público — login único (SuperAdmin/GestorONG/Doador) |
+| `POST` | `/api/v1/auth/register/doador` | Público — auto-cadastro de doador |
+| `POST` | `/api/v1/auth/register/gestor` | `SuperAdmin` — cadastro de gestor da ONG |
 | `GET` | `/api/v1/campanhas` | Público — painel de transparência (só campanhas `Ativa`) |
 | `POST` | `/api/v1/campanhas` | `GestorONG` |
 | `PUT` | `/api/v1/campanhas/{id}` | `GestorONG` |
-| `POST` | `/api/v1/doadores` | Público — auto-cadastro de doador |
-| `POST` | `/api/v1/gestores` | `SuperAdmin` — cadastro de gestor da ONG |
 | `POST` | `/api/v1/doacoes` | `Doador` — publica `DoacaoRecebidaEvent`, não atualiza o total direto |
 | `GET` | `/health` | Público |
 | `GET` | `/metrics` | Público (formato Prometheus) |
