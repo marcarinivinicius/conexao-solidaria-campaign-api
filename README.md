@@ -115,9 +115,10 @@ IP (`429` acima disso).
 ## Postman
 
 Collection completa em [`postman/ConexaoSolidaria.postman_collection.json`](postman/ConexaoSolidaria.postman_collection.json)
-— login, cadastro de doador, CRUD de campanhas e doação, com os tokens
-capturados automaticamente entre as requisições (rode as pastas na ordem
-1 → 4). `baseUrl` default é `http://localhost:8081`.
+— login, cadastro de doador (com refresh/logout), cadastro de gestor, CRUD
+de campanhas, doação (com demo de `Idempotency-Key`) e observabilidade,
+com os tokens capturados automaticamente entre as requisições (rode as
+pastas na ordem 1 → 5). `baseUrl` default é `http://localhost:8081`.
 
 ## Deploy (GitOps)
 
@@ -156,6 +157,23 @@ claro na etapa de clone/push — não afeta build nem testes.
 dotnet test
 ```
 
-Cobertura focada no domínio (`Campanha`/`Doador`), onde ficam as regras de
-negócio do desafio (meta financeira > 0, data de término não pode estar no
-passado, CPF válido).
+Dois projetos: `Domain.Tests` (regras de negócio — meta financeira > 0,
+data de término não pode estar no passado, CPF válido) e
+`Application.Tests` (handlers de auth com fakes em memória — rotação de
+refresh token, expiração, reuso detectado revogando a sessão inteira,
+logout idempotente, caso SuperAdmin).
+
+## Validação, rate limiting e idempotência
+
+- **Validação de entrada**: FluentValidation + pipeline do MediatR em
+  todos os commands — request malformado retorna `400` com
+  `{ "message": "Dados invalidos.", "errors": [{ "propertyName", "errorMessage" }] }`
+  antes de chegar no domínio/banco.
+- **Rate limiting**: 5 requisições/minuto por IP em `login`/`register`/`refresh`
+  (`429` acima disso).
+- **CORS**: policy `Default`, origens lidas de `Cors:AllowedOrigins`
+  (vazio por padrão — configure por ambiente).
+- **Idempotência de doação**: ver header `Idempotency-Key` na tabela de
+  endpoints acima. Protege contra retry duplicado do cliente; o
+  `donation-worker` também se protege contra redelivery do RabbitMQ do
+  lado dele (ver README daquele repo).
