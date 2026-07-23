@@ -62,10 +62,16 @@ API em `http://localhost:8081`.
 
 ## Autenticação
 
-| Role | Como logar |
-|---|---|
-| `Doador` | `POST /api/v1/doadores` (cadastro) e depois `POST /api/v1/doadores/login` |
-| `GestorONG` | `POST /api/v1/auth/gestor/login` com a credencial seedada em `appsettings.json` (`GestorOng` section) — default de dev: `gestor@conexaosolidaria.org.br` / `TrocarSenha123!` |
+Login **único** pra qualquer role — `POST /api/v1/auth/login` com
+`{ "email": "...", "senha": "..." }`. O backend resolve sozinho quem é
+quem (tenta `SuperAdmin` → `Gestor` → `Doador`, nessa ordem) e devolve
+`{ "token": "...", "role": "..." }`.
+
+| Role | Como existe | Login |
+|---|---|---|
+| `SuperAdmin` | Credencial única seedada em `appsettings.json` (seção `SuperAdmin`) — default de dev: `superadmin@conexaosolidaria.org.br` / `TrocarSenha123!` | `POST /api/v1/auth/login` |
+| `GestorONG` | Cadastrado por quem já é `SuperAdmin`, via `POST /api/v1/gestores` | `POST /api/v1/auth/login` |
+| `Doador` | Auto-cadastro público via `POST /api/v1/doadores` | `POST /api/v1/auth/login` |
 
 Use o token retornado no header `Authorization: Bearer <token>`.
 
@@ -73,14 +79,22 @@ Use o token retornado no header `Authorization: Bearer <token>`.
 
 | Método | Rota | Acesso |
 |---|---|---|
+| `POST` | `/api/v1/auth/login` | Público — login único (SuperAdmin/GestorONG/Doador) |
 | `GET` | `/api/v1/campanhas` | Público — painel de transparência (só campanhas `Ativa`) |
 | `POST` | `/api/v1/campanhas` | `GestorONG` |
 | `PUT` | `/api/v1/campanhas/{id}` | `GestorONG` |
-| `POST` | `/api/v1/doadores` | Público — cadastro |
-| `POST` | `/api/v1/doadores/login` | Público |
+| `POST` | `/api/v1/doadores` | Público — auto-cadastro de doador |
+| `POST` | `/api/v1/gestores` | `SuperAdmin` — cadastro de gestor da ONG |
 | `POST` | `/api/v1/doacoes` | `Doador` — publica `DoacaoRecebidaEvent`, não atualiza o total direto |
 | `GET` | `/health` | Público |
-| `GET` | `/metrics` | Público (formato Prometheus, coletado pelo Zabbix agent2 do `conexao-solidaria-infra`) |
+| `GET` | `/metrics` | Público (formato Prometheus) |
+
+## Postman
+
+Collection completa em [`postman/ConexaoSolidaria.postman_collection.json`](postman/ConexaoSolidaria.postman_collection.json)
+— login, cadastro de doador, CRUD de campanhas e doação, com os tokens
+capturados automaticamente entre as requisições (rode as pastas na ordem
+1 → 4). `baseUrl` default é `http://localhost:8081`.
 
 ## Deploy (GitOps)
 

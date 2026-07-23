@@ -1,41 +1,23 @@
-using ConexaoSolidaria.CampaignApi.Application;
-using ConexaoSolidaria.CampaignApi.Application.Abstractions;
-using ConexaoSolidaria.CampaignApi.Infrastructure.Data.Configuration;
+using ConexaoSolidaria.CampaignApi.Application.UseCases.Auth.Login;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace ConexaoSolidaria.CampaignApi.Api.Controllers;
 
-// Login do GestorONG: credencial unica seedada via configuracao (secao
-// "GestorOng"), sem tela de auto-cadastro - fora do escopo do desafio, que
-// so pede a role existindo e os endpoints de gestao bloqueados pra ela.
+// Login unico pra qualquer role (SuperAdmin, GestorONG, Doador) - o
+// backend resolve sozinho quem e quem, o cliente so manda email/senha.
 [ApiController]
-[Route("api/v1/auth/gestor")]
+[Route("api/v1/auth")]
 [AllowAnonymous]
-public class AuthController(
-    IOptions<GestorOngCredentialsOptions> credentials,
-    IPasswordHasher passwordHasher,
-    IJwtTokenGenerator jwtTokenGenerator) : ControllerBase
+public class AuthController(IMediator mediator) : ControllerBase
 {
     [HttpPost("login")]
-    public ActionResult<LoginGestorResponse> Login([FromBody] LoginGestorRequest request)
+    public async Task<ActionResult<LoginResult>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var config = credentials.Value;
-
-        if (!string.Equals(request.Email, config.Email, StringComparison.OrdinalIgnoreCase)
-            || string.IsNullOrEmpty(config.SenhaHash)
-            || !passwordHasher.Verificar(request.Senha, config.SenhaHash))
-        {
-            return Unauthorized(new { message = "Email ou senha invalidos." });
-        }
-
-        var token = jwtTokenGenerator.GerarToken(Guid.Empty, config.Email, Roles.GestorOng);
-
-        return Ok(new LoginGestorResponse(token));
+        var result = await mediator.Send(new LoginCommand(request.Email, request.Senha), cancellationToken);
+        return Ok(result);
     }
 }
 
-public record LoginGestorRequest(string Email, string Senha);
-
-public record LoginGestorResponse(string Token);
+public record LoginRequest(string Email, string Senha);

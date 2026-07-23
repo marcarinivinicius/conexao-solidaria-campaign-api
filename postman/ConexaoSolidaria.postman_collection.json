@@ -1,0 +1,308 @@
+{
+  "info": {
+    "name": "Conexao Solidaria - Campaign API",
+    "description": "Fluxo completo da API do hackathon Conexao Solidaria: login unico (SuperAdmin/GestorONG/Doador), cadastro de gestor e doador, CRUD de campanhas, doacao e observabilidade. Tokens, ids e dados unicos (CPF/email) sao gerados/capturados automaticamente entre as requisicoes - rode as pastas em ordem (1 a 5).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081" },
+    { "key": "runId", "value": "" },
+    { "key": "superAdminToken", "value": "" },
+    { "key": "gestorToken", "value": "" },
+    { "key": "doadorToken", "value": "" },
+    { "key": "campanhaId", "value": "" },
+    { "key": "gestorEmail", "value": "" },
+    { "key": "doadorEmail", "value": "" },
+    { "key": "doadorCpf", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Gera email/CPF unicos por execucao da collection, pra rodar de novo",
+          "// sem colidir com email/CPF ja cadastrados numa run anterior.",
+          "if (!pm.collectionVariables.get('runId')) {",
+          "  pm.collectionVariables.set('runId', Date.now().toString());",
+          "}",
+          "",
+          "function cpfValido() {",
+          "  const d = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));",
+          "  const calc = (arr, tam) => {",
+          "    let soma = 0, peso = tam + 1;",
+          "    for (let i = 0; i < tam; i++) soma += arr[i] * peso--;",
+          "    const resto = soma % 11;",
+          "    return resto < 2 ? 0 : 11 - resto;",
+          "  };",
+          "  const d9 = calc(d, 9); d.push(d9);",
+          "  const d10 = calc(d, 10); d.push(d10);",
+          "  return d.join('');",
+          "}",
+          "",
+          "if (!pm.collectionVariables.get('doadorCpf')) {",
+          "  pm.collectionVariables.set('doadorCpf', cpfValido());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth - SuperAdmin",
+      "item": [
+        {
+          "name": "Login SuperAdmin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"superadmin@conexaosolidaria.org.br\",\n  \"senha\": \"TrocarSenha123!\"\n}"
+            },
+            "description": "Credencial seedada em appsettings.json (secao SuperAdmin). Salva o token em {{superAdminToken}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Role e SuperAdmin', () => pm.expect(json.role).to.eql('SuperAdmin'));",
+                  "pm.collectionVariables.set('superAdminToken', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar Gestor (SuperAdmin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{superAdminToken}}" }] },
+            "url": "{{baseUrl}}/api/v1/gestores",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Gestor Postman\",\n  \"email\": \"gestor.postman.{{runId}}@exemplo.com\",\n  \"senha\": \"SenhaGestor123!\"\n}"
+            },
+            "description": "Precisa do {{superAdminToken}} (rode 'Login SuperAdmin' antes). Salva o email gerado em {{gestorEmail}} pro proximo login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('gestorEmail', 'gestor.postman.' + pm.collectionVariables.get('runId') + '@exemplo.com');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Gestor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{gestorEmail}}\",\n  \"senha\": \"SenhaGestor123!\"\n}"
+            },
+            "description": "Salva o token em {{gestorToken}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Role e GestorONG', () => pm.expect(json.role).to.eql('GestorONG'));",
+                  "pm.collectionVariables.set('gestorToken', json.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Auth - Doador",
+      "item": [
+        {
+          "name": "Cadastrar Doador",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/doadores",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Maria Postman\",\n  \"email\": \"doador.postman.{{runId}}@exemplo.com\",\n  \"cpf\": \"{{doadorCpf}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"
+            },
+            "description": "Publico. Email e CPF gerados na collection (variable de pre-request), unicos por execucao. Salva o email em {{doadorEmail}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('doadorEmail', 'doador.postman.' + pm.collectionVariables.get('runId') + '@exemplo.com');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Doador",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{doadorEmail}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"
+            },
+            "description": "Salva o token em {{doadorToken}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Role e Doador', () => pm.expect(json.role).to.eql('Doador'));",
+                  "pm.collectionVariables.set('doadorToken', json.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Campanhas",
+      "item": [
+        {
+          "name": "Criar Campanha (GestorONG)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{gestorToken}}" }] },
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Natal Solidario (Postman)\",\n  \"descricao\": \"Campanha criada via collection do Postman\",\n  \"dataInicio\": \"2026-01-01T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1000\n}"
+            },
+            "description": "Precisa do {{gestorToken}} (pasta 1). Salva o id da campanha em {{campanhaId}}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('campanhaId', json.id);",
+                  "pm.test('Id recebido', () => pm.expect(json.id).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar Campanha (GestorONG)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{gestorToken}}" }] },
+            "url": "{{baseUrl}}/api/v1/campanhas/{{campanhaId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Natal Solidario (Postman - editada)\",\n  \"descricao\": \"Descricao atualizada via collection\",\n  \"dataInicio\": \"2026-01-01T00:00:00Z\",\n  \"dataFim\": \"2026-12-31T00:00:00Z\",\n  \"metaFinanceira\": 1500,\n  \"status\": 1\n}"
+            },
+            "description": "status e o enum StatusCampanha sem conversor pra string (System.Text.Json serializa enum como numero por padrao): 1 = Ativa, 2 = Concluida, 3 = Cancelada."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 204', () => pm.response.to.have.status(204));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Campanhas Ativas (Painel Publico)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/campanhas",
+            "description": "Publico, sem autenticacao. Mostra o valorTotalArrecadado atualizado pelo donation-worker."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Doacoes",
+      "item": [
+        {
+          "name": "Registrar Doacao (Doador)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{doadorToken}}" }] },
+            "url": "{{baseUrl}}/api/v1/doacoes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCampanha\": \"{{campanhaId}}\",\n  \"valorDoacao\": 150.50\n}"
+            },
+            "description": "Precisa do {{doadorToken}} e {{campanhaId}} (pastas anteriores). Publica DoacaoRecebidaEvent no RabbitMQ - o valor so aparece em 'Listar Campanhas Ativas' depois do donation-worker consumir a fila (poucos segundos)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Observabilidade",
+      "item": [
+        {
+          "name": "Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "Metrics (Prometheus)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/metrics" }
+        }
+      ]
+    }
+  ]
+}

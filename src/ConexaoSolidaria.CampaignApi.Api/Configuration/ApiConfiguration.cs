@@ -1,4 +1,5 @@
 using System.Text;
+using ConexaoSolidaria.CampaignApi.Api.Middlewares;
 using ConexaoSolidaria.CampaignApi.Infrastructure.Data.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -69,6 +70,8 @@ public static class ApiConfiguration
 
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
         app.UseSwagger();
         app.UseSwaggerUI();
 

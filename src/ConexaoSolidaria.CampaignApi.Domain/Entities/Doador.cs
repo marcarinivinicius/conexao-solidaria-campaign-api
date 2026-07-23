@@ -1,9 +1,9 @@
-using System.Text.RegularExpressions;
 using ConexaoSolidaria.CampaignApi.Domain.Exceptions;
+using ConexaoSolidaria.CampaignApi.Domain.Validation;
 
 namespace ConexaoSolidaria.CampaignApi.Domain.Entities;
 
-public partial class Doador
+public class Doador
 {
     public Guid Id { get; private set; }
     public string NomeCompleto { get; private set; } = string.Empty;
@@ -19,7 +19,7 @@ public partial class Doador
         if (string.IsNullOrWhiteSpace(nomeCompleto))
             throw new DomainException("Nome completo e obrigatorio.");
 
-        if (string.IsNullOrWhiteSpace(email) || !EmailRegex().IsMatch(email))
+        if (!EmailValidator.EhValido(email))
             throw new DomainException("Email invalido.");
 
         var cpfDigitos = new string(cpf.Where(char.IsDigit).ToArray());
@@ -60,7 +60,4 @@ public partial class Doador
 
         return CalcularDigito(9) == numeros[9] && CalcularDigito(10) == numeros[10];
     }
-
-    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
-    private static partial Regex EmailRegex();
 }

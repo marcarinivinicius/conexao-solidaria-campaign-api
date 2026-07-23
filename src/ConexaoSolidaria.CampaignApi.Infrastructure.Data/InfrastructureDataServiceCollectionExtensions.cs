@@ -13,13 +13,14 @@ public static class InfrastructureDataServiceCollectionExtensions
     public static IServiceCollection AddInfrastructureData(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-        services.Configure<GestorOngCredentialsOptions>(configuration.GetSection(GestorOngCredentialsOptions.SectionName));
+        services.Configure<SuperAdminCredentialsOptions>(configuration.GetSection(SuperAdminCredentialsOptions.SectionName));
 
         services.AddRabbitMqClient<CampaignApiRabbitMqConfiguration>();
         services.AddSingleton<IDoacaoEventPublisher, RabbitMqDoacaoEventPublisher>();
 
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<ISuperAdminAuthenticator, SuperAdminAuthenticator>();
 
         return services;
     }
