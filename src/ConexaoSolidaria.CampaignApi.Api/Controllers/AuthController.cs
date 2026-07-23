@@ -22,7 +22,7 @@ public class AuthController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("register/doador")]
+    [HttpPost("register")]
     [AllowAnonymous]
     public async Task<ActionResult<CadastrarDoadorResult>> RegistrarDoador(
         [FromBody] CadastrarDoadorRequest request, CancellationToken cancellationToken)

@@ -141,7 +141,7 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": "{{baseUrl}}/api/v1/auth/register/doador",
+            "url": "{{baseUrl}}/api/v1/auth/register",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nomeCompleto\": \"Maria Postman\",\n  \"email\": \"doador.postman.{{runId}}@exemplo.com\",\n  \"cpf\": \"{{doadorCpf}}\",\n  \"senha\": \"MinhaSenha123!\"\n}"
