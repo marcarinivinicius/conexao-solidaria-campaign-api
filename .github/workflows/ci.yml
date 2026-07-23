@@ -41,19 +41,32 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --logger "console;verbosity=normal"
 
-  # So builda e publica imagem quando o push e de uma tag de versao
-  # (ex.: v1.2.3) - nenhuma imagem e criada em push comum na main ou em PR.
+  # Builda e publica imagem em TODO push na main ou de tag - nenhuma em PR
+  # (obrigatorio pelo enunciado do hackathon: "a geracao da imagem no CI e
+  # obrigatoria" a cada push na branch principal). Push comum na main leva
+  # a tag "main-<sha curto>" (nunca "latest" - imagem sem versao rastreavel
+  # nao serve pra debugar depois); push de tag de versao (ex.: v1.2.3) usa
+  # a propria tag. So a segunda forma dispara o job de deploy abaixo.
   publish-image:
     runs-on: ubuntu-latest
     needs: build-test
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
     outputs:
-      image_tag: ${{ github.ref_name }}
+      image_tag: ${{ steps.tag.outputs.value }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Determinar tag da imagem
+        id: tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "value=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=main-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: docker/setup-buildx-action@v3
 
@@ -69,16 +82,19 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
+          tags: ${{ env.IMAGE }}:${{ steps.tag.outputs.value }}
           secrets: |
             nuget_token=${{ secrets.GITHUB_TOKEN }}
 
   # Abre um PR em conexao-solidaria-infra bumpando a tag da imagem
   # (cluster/apps/services/campaign-api/kustomization.yaml). O ArgoCD
   # sincroniza depois que esse PR for mergeado - ver conexao-solidaria-infra/README.md.
+  # So roda pra push de tag de versao - push comum na main so gera a imagem
+  # acima, sem abrir PR de deploy (fluxo de release continua manual/por tag).
   deploy:
     runs-on: ubuntu-latest
     needs: publish-image
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Clone repo infra
         run: |

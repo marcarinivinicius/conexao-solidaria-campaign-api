@@ -126,17 +126,19 @@ Não existe mais `kubectl apply -k k8s/` neste repo. O deploy em Kubernetes
 que também guarda os manifests (`Rollout` com canary, `Ingress`,
 `Service`).
 
-O CI tem duas partes com gatilhos diferentes:
+O CI tem três partes com gatilhos diferentes:
 
 | Gatilho | O que roda |
 |---|---|
-| Push em `main` ou Pull Request | Só `build-test` (build + `dotnet test`) — **nenhuma imagem é criada** |
-| Push de uma tag `v*` (ex.: `v1.2.0`) | `build-test` + build/push da imagem em `ghcr.io/marcarinivinicius/conexao-solidaria-campaign-api:<tag>` + abre PR em `conexao-solidaria-infra` bumpando pra essa tag |
+| Pull Request | Só `build-test` (build + `dotnet test`) — nenhuma imagem é criada |
+| Push em `main` | `build-test` + build/push da imagem em `ghcr.io/marcarinivinicius/conexao-solidaria-campaign-api:main-<sha curto>` — **nenhum PR de deploy é aberto** |
+| Push de uma tag `v*` (ex.: `v1.2.0`) | `build-test` + build/push da imagem com a tag de versão (`:v1.2.0`, nunca `:latest`) + abre PR em `conexao-solidaria-infra` bumpando pra essa tag |
 
-Ou seja: imagem só existe quando alguém decide cortar uma versão
-(`git tag v1.2.0 && git push origin v1.2.0`) — commits normais na `main`
-não geram deploy nenhum. Quem promove a nova imagem pro cluster depois do
-PR mergeado é o ArgoCD + Argo Rollouts.
+Ou seja: toda imagem de commit fica rastreável no GHCR (satisfaz "gerar a
+imagem Docker a cada push na main"), mas só uma tag de versão (`git tag
+v1.2.0 && git push origin v1.2.0`) dispara o PR de deploy — commits
+normais na `main` não promovem nada pro cluster. Quem promove a nova
+imagem pro cluster depois do PR mergeado é o ArgoCD + Argo Rollouts.
 
 ```bash
 git tag v1.0.0
