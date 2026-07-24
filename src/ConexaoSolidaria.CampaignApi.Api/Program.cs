@@ -7,7 +7,8 @@ using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new FlexibleDateTimeConverter()));
 
 builder.Services.AddValidatorsFromAssembly(typeof(CriarCampanhaCommand).Assembly);
 builder.Services.AddMediatR(cfg =>
