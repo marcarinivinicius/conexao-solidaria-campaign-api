@@ -5,4 +5,5 @@ public static class Roles
     public const string SuperAdmin = "SuperAdmin";
     public const string GestorOng = "GestorONG";
     public const string Doador = "Doador";
+    public const string SuperAdminOuGestorOng = SuperAdmin + "," + GestorOng;
 }

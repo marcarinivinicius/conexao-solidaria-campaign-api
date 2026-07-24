@@ -83,13 +83,13 @@ revoga o refresh token (idempotente, sempre `204`).
 Cadastro: `/api/v1/auth/register` é o registro padrão, público, de
 doador — já devolve `{ "id": "...", "token": "...", "refreshToken": "...",
 "role": "Doador" }`, sem precisar chamar `/auth/login` em seguida. Gestor
-tem rota própria porque exige autenticação de `SuperAdmin` (por isso não
-devolve token de outra pessoa pra quem chamou):
+tem rota própria porque exige autenticação de `SuperAdmin` ou `GestorONG`
+(por isso não devolve token de outra pessoa pra quem chamou):
 
 | Role | Como existe | Cadastro | Login |
 |---|---|---|---|
 | `SuperAdmin` | Credencial única seedada em `appsettings.json` (seção `SuperAdmin`) — default de dev: `superadmin@conexaosolidaria.org.br` / `TrocarSenha123!` | — | `POST /api/v1/auth/login` |
-| `GestorONG` | Cadastrado por quem já é `SuperAdmin` | `POST /api/v1/auth/register/gestor` (autenticado como `SuperAdmin`) | `POST /api/v1/auth/login` |
+| `GestorONG` | Cadastrado por quem já é `SuperAdmin` ou `GestorONG` | `POST /api/v1/auth/register/gestor` (autenticado como `SuperAdmin` ou `GestorONG`) | `POST /api/v1/auth/login` |
 | `Doador` | Auto-cadastro público | `POST /api/v1/auth/register` (anônimo) | `POST /api/v1/auth/login` |
 
 Use o token retornado no header `Authorization: Bearer <token>`.

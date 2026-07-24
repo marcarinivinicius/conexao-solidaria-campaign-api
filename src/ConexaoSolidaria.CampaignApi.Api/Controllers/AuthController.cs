@@ -58,7 +58,7 @@ public class AuthController(IMediator mediator) : ControllerBase
     }
 
     [HttpPost("register/gestor")]
-    [Authorize(Roles = Roles.SuperAdmin)]
+    [Authorize(Roles = Roles.SuperAdminOuGestorOng)]
     public async Task<ActionResult<CadastrarGestorResult>> RegistrarGestor(
         [FromBody] CadastrarGestorRequest request, CancellationToken cancellationToken)
     {
