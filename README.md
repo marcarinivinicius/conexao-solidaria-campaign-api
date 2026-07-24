@@ -35,7 +35,7 @@ Token pessoal (escopo `read:packages`) e exporte:
 
 ```bash
 export GITHUB_PACKAGES_TOKEN=ghp_xxx  # nunca commite isso
-dotnet nuget update source github-conexao-solidaria \
+dotnet nuget update source conexaoSolidaria \
   --username marcarinivinicius \
   --password $GITHUB_PACKAGES_TOKEN \
   --store-password-in-clear-text

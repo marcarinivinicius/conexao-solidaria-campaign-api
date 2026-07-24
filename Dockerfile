@@ -14,7 +14,7 @@ COPY src/ConexaoSolidaria.CampaignApi.Api/*.csproj src/ConexaoSolidaria.Campaign
 # em nenhuma camada da imagem) - localmente, exporte GITHUB_PACKAGES_TOKEN e
 # rode com `docker build --secret id=nuget_token,env=GITHUB_PACKAGES_TOKEN`.
 RUN --mount=type=secret,id=nuget_token \
-    dotnet nuget update source github-conexao-solidaria \
+    dotnet nuget update source conexaoSolidaria \
       --username marcarinivinicius \
       --password "$(cat /run/secrets/nuget_token)" \
       --store-password-in-clear-text \
