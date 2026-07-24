@@ -14,6 +14,8 @@ public class CampanhaConfiguration : IEntityTypeConfiguration<Campanha>
 
         builder.Property(c => c.Titulo).HasMaxLength(200).IsRequired();
         builder.Property(c => c.Descricao).HasMaxLength(4000).IsRequired();
+        builder.Property(c => c.DataInicio).HasColumnType("date");
+        builder.Property(c => c.DataFim).HasColumnType("date");
         builder.Property(c => c.MetaFinanceira).HasColumnType("numeric(18,2)");
         builder.Property(c => c.ValorTotalArrecadado).HasColumnType("numeric(18,2)");
         builder.Property(c => c.Status).HasConversion<string>().HasMaxLength(20);

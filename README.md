@@ -104,9 +104,9 @@ IP (`429` acima disso).
 | `POST` | `/api/v1/auth/refresh` | Público — troca refresh token por par novo (rotação) |
 | `POST` | `/api/v1/auth/logout` | Público — revoga o refresh token |
 | `POST` | `/api/v1/auth/register` | Público — auto-cadastro de doador |
-| `POST` | `/api/v1/auth/register/gestor` | `SuperAdmin` — cadastro de gestor da ONG |
+| `POST` | `/api/v1/auth/register/gestor` | `SuperAdmin` ou `GestorONG` — cadastro de gestor da ONG |
 | `GET` | `/api/v1/campanhas` | Público — painel de transparência (só campanhas `Ativa`) |
-| `POST` | `/api/v1/campanhas` | `GestorONG` |
+| `POST` | `/api/v1/campanhas` | `GestorONG` — `dataInicio`/`dataFim` em ISO 8601 (`"2026-07-24"`), não `dd/MM/yyyy` |
 | `PUT` | `/api/v1/campanhas/{id}` | `GestorONG` |
 | `POST` | `/api/v1/doacoes` | `Doador` — publica `DoacaoRecebidaEvent`, não atualiza o total direto. Header opcional `Idempotency-Key: <guid>` evita duplicar a doação em retry |
 | `GET` | `/health` | Público |
